@@ -1,0 +1,22 @@
+# Core
+httpx>=0.27,<1.0
+pydantic>=2.7,<3.0
+PyYAML>=6.0
+python-dateutil>=2.9
+
+# CLI + scheduling
+typer>=0.12,<1.0
+rich>=13.7
+APScheduler>=3.10,<4.0
+
+# Dashboard
+fastapi>=0.111
+uvicorn[standard]>=0.30
+jinja2>=3.1
+python-multipart>=0.0.9
+
+# AI theme analysis
+anthropic>=0.34
+
+# Dev
+pytest>=8.0

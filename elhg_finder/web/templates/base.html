@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}ELHG Finder{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <div class="wrap bar">
+    <a class="brand" href="/">ELHG&nbsp;Finder</a>
+    <nav>
+      <a href="/">Findings</a>
+      <a href="/themes">Opportunities</a>
+    </nav>
+    <div class="actions">
+      {% if state.running %}
+        <span class="pill running">working…</span>
+      {% else %}
+        <form method="post" action="/crawl"><button class="btn">Run crawl</button></form>
+        <form method="post" action="/analyze"><button class="btn ghost">Analyze</button></form>
+      {% endif %}
+    </div>
+  </div>
+  {% if state.last %}<div class="wrap note">{{ state.last }}</div>{% endif %}
+</header>
+<main class="wrap">{% block content %}{% endblock %}</main>
+<footer class="wrap">
+  {{ stats.total_findings }} findings · {{ stats.new_last_7d }} new this week ·
+  {{ stats.themes }} opportunities
+</footer>
+</body>
+</html>

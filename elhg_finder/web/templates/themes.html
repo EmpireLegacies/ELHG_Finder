@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Opportunities · ELHG Finder{% endblock %}
+{% block content %}
+
+<h1>Market opportunities</h1>
+<p class="lede">Recurring demands clustered from the highest-signal findings.</p>
+
+{% if not themes %}
+  <p class="empty">No analysis yet. Crawl some findings first, then hit
+  <strong>Analyze</strong>. Requires <code>ANTHROPIC_API_KEY</code>.</p>
+{% endif %}
+
+{% for t in themes %}
+<article class="theme conf-{{ t.confidence }}">
+  <header>
+    <h2>{{ t.label }}</h2>
+    <span class="pill conf">{{ t.confidence }} confidence</span>
+    <span class="pill">demand {{ '%.1f'|format(t.demand_score) }}</span>
+  </header>
+  <div class="row"><h3>What people are saying</h3><p>{{ t.summary }}</p></div>
+  <div class="row opp"><h3>What you could sell</h3><p>{{ t.opportunity }}</p></div>
+  <div class="row"><h3>Who buys it</h3><p>{{ t.audience }}</p></div>
+  <div class="evidence">{{ t.evidence|length }} supporting posts</div>
+</article>
+{% endfor %}
+{% endblock %}

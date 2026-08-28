@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block content %}
+
+<form class="filters" method="get">
+  <input type="search" name="q" value="{{ filters.q }}" placeholder="Search titles and bodies…">
+  <select name="source">
+    <option value="">All sources</option>
+    {% for s in sources %}
+    <option value="{{ s }}" {% if filters.source == s %}selected{% endif %}>{{ s }}</option>
+    {% endfor %}
+  </select>
+  <select name="topic">
+    <option value="">All topics</option>
+    {% for t in topics %}
+    <option value="{{ t }}" {% if filters.topic == t %}selected{% endif %}>{{ t }}</option>
+    {% endfor %}
+  </select>
+  <select name="days">
+    <option value="0">Any time</option>
+    <option value="7"  {% if filters.days == 7 %}selected{% endif %}>Found last 7 days</option>
+    <option value="30" {% if filters.days == 30 %}selected{% endif %}>Found last 30 days</option>
+  </select>
+  <label class="check">
+    <input type="checkbox" name="starred" value="1" {% if filters.starred %}checked{% endif %}>
+    Starred
+  </label>
+  <button class="btn">Filter</button>
+</form>
+
+{% if not rows %}
+  <p class="empty">Nothing here yet. Hit <strong>Run crawl</strong> above, or run
+  <code>elhg crawl</code> from the terminal.</p>
+{% endif %}
+
+<ul class="findings">
+  {% for r in rows %}
+  <li class="finding">
+    <div class="score" title="Demand score">{{ '%.1f'|format(r.demand_score) }}</div>
+    <div class="detail">
+      <a class="title" href="{{ r.url }}" target="_blank" rel="noopener">{{ r.title }}</a>
+      {% if r.body %}<p class="body">{{ r.body[:320] }}{% if r.body|length > 320 %}…{% endif %}</p>{% endif %}
+      <div class="meta">
+        <span class="src">{{ r.source }}</span>
+        {% if r.community %}<span>{{ r.community }}</span>{% endif %}
+        {% if r.created_at %}<span>{{ r.created_at[:10] }}</span>{% endif %}
+        <span>▲ {{ r.score }}</span>
+        <span>{{ r.num_comments }} replies</span>
+        {% if not r.is_answered %}<span class="tag unanswered">unanswered</span>{% endif %}
+        {% for s in r.signal_list %}<span class="tag sig">{{ s.replace('_',' ') }}</span>{% endfor %}
+      </div>
+    </div>
+    <form method="post" action="/star/{{ r.fingerprint }}" class="starform">
+      <input type="hidden" name="value" value="{{ 0 if r.starred else 1 }}">
+      <button class="star {% if r.starred %}on{% endif %}" title="Star">★</button>
+    </form>
+  </li>
+  {% endfor %}
+</ul>
+{% endblock %}

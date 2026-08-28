@@ -1,0 +1,92 @@
+# Copy to config.yaml (gitignored) and edit. Secrets live in .env, not here.
+
+db_path: data/findings.db
+
+# Sources to crawl. hackernews and stackexchange need no API key at all.
+sources:
+  - reddit
+  - hackernews
+  - stackexchange
+  - websearch
+
+# Seed topics crossed with the demand patterns in elhg_finder/signals.py.
+# Trim this list to focus the search — fewer topics means deeper coverage
+# of each and far fewer API calls.
+topics:
+  - virtual assistant
+  - bookkeeping
+  - freelance writing
+  - video editing
+  - social media management
+  - AI automation
+  - no code app
+  - spreadsheet automation
+  - notion template
+  - digital product
+  - online course
+  - print on demand
+  - etsy shop
+  - transcription
+  - resume writing
+  - grant writing
+  - podcast editing
+  - SEO
+  - email marketing
+  - copywriting
+  - medical billing
+  - tax preparation
+  - online tutoring
+  - course creation
+  - newsletter business
+  - consulting from home
+  - prompt engineering
+
+# Communities where people discuss making money from home.
+subreddits:
+  - smallbusiness
+  - Entrepreneur
+  - sidehustle
+  - WorkOnline
+  - freelance
+  - SaaS
+  - juststart
+  - EntrepreneurRideAlong
+  - solopreneur
+  - WFH
+  - Upwork
+  - Fiverr
+  - passive_income
+  - NoCode
+  - automation
+  - consulting
+
+stackexchange_sites:
+  - softwarerecs
+  - freelancing
+  - workplace
+  - money
+  - webapps
+
+# --- Metered search layer (Quora, JustAnswer, anywhere else) ---------------
+websearch_provider: brave        # brave | serper | google
+websearch_sites:
+  - quora.com
+  - justanswer.com
+  # - answers.yahoo.com
+  # - reddit.com          # a second angle on Reddit, via the search index
+websearch_intents:               # only spend quota on high-purchase-intent phrasings
+  - willing_to_pay
+  - hiring
+  - unmet_tool_need
+websearch_max_queries: 60        # hard cap per run — protects your free tier
+
+# --- Crawl behavior --------------------------------------------------------
+backfill_days: 365
+schedule_cron: "0 6 * * *"       # daily at 6am
+request_delay: 1.2               # seconds between API calls
+max_results_per_query: 50
+min_score_to_store: 2.0          # below this, it isn't worth reading
+
+# --- AI theme analysis -----------------------------------------------------
+analysis_model: claude-sonnet-5
+analysis_batch: 300              # top N findings sent per analysis pass
