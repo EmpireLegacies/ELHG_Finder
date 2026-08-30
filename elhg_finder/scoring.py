@@ -18,6 +18,15 @@ W_ENGAGEMENT = 0.8    # how many other people cared
 W_RECENCY = 0.6       # whether the demand is current
 W_UNANSWERED = 2.0    # nobody solved it = the gap is still open
 
+# Hacker News marks stance in the title. "Ask HN" is a person with a problem;
+# "Show HN" and "Launch HN" are a person with a product. Both use identical
+# money language, so the phrasing in the body cannot tell them apart, but the
+# prefix can. Without this, product announcements outrank real questions.
+ASK_PREFIXES = ("ask hn:",)
+PITCH_PREFIXES = ("show hn:", "launch hn:")
+STANCE_ASK = 3.0
+STANCE_PITCH = -6.0
+
 
 def intent_component(signals: list[tuple[str, str]]) -> float:
     """Highest-weight intent, plus a small bonus for corroborating signals.
@@ -61,6 +70,23 @@ def unanswered_bonus(is_answered: bool, num_comments: int) -> float:
     return 0.0
 
 
+def stance_component(f: Finding) -> float:
+    """Reward people asking; penalize people selling.
+
+    Supply wearing demand's vocabulary is the main precision problem in this
+    tool. Only Hacker News labels stance in the title, so other sources score
+    0 here rather than guessing.
+    """
+    if f.source != "hackernews":
+        return 0.0
+    title = f.title.strip().lower()
+    if title.startswith(PITCH_PREFIXES):
+        return STANCE_PITCH
+    if title.startswith(ASK_PREFIXES):
+        return STANCE_ASK
+    return 0.0
+
+
 def score_finding(f: Finding) -> Finding:
     """Attach signals and a demand score to a finding, in place."""
     if not f.signals:
@@ -70,6 +96,7 @@ def score_finding(f: Finding) -> Finding:
         + W_ENGAGEMENT * engagement_component(f.score, f.num_comments)
         + W_RECENCY * recency_component(f.age_days)
         + unanswered_bonus(f.is_answered, f.num_comments)
+        + stance_component(f)
     )
     f.demand_score = round(total, 2)
     return f

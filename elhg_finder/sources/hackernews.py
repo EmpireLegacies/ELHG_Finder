@@ -27,7 +27,11 @@ class HackerNewsSource(Source):
         seen: set[str] = set()
 
         for pattern in patterns:
-            for query in (pattern.query, *(f"{pattern.query} {t}" for t in topics[:12])):
+            # Every query carries a topic. This used to also run pattern.query
+            # bare, with no subject attached, which searched all of Hacker News
+            # for the intent phrase alone. That is what filled the first run
+            # with front-page stories matching none of the configured topics.
+            for query in (f"{pattern.query} {t}" for t in topics[:12]):
                 try:
                     data = self.get_json(SEARCH, params={
                         "query": query,

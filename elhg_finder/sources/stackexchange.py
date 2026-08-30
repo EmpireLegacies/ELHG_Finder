@@ -27,11 +27,15 @@ class StackExchangeSource(Source):
         patterns = [p for p in PATTERNS
                     if p.intent in {Intent.UNMET_TOOL_NEED, Intent.LEARNING, Intent.HOW_TO}]
         seen: set[str] = set()
+        total_queries = 0
+        empty_queries = 0
+        sample = ""
 
         for site in self.config.stackexchange_sites:
             for topic in topics:
                 for pattern in patterns[:6]:
                     query = f"{pattern.query} {topic}"
+                    total_queries += 1
                     try:
                         data = self.get_json(SEARCH, params={
                             "order": "desc", "sort": "relevance", "q": query,
@@ -41,14 +45,51 @@ class StackExchangeSource(Source):
                     except SourceError as exc:
                         self.record_error(exc)
                         continue
-                    for item in data.get("items", []):
-                        qid = f"{site}:{item['question_id']}"
-                        if qid in seen:
-                            continue
-                        seen.add(qid)
-                        yield self._to_finding(item, site, topic, query)
-                    if not data.get("has_more") and data.get("quota_remaining", 1) < 10:
+
+                    items = data.get("items", [])
+                    quota = data.get("quota_remaining")
+
+                    if not items:
+                        # A 200 response can still be a refusal: Stack Exchange
+                        # reports throttling and bad requests in the body, not
+                        # in the status code. Reading only "items" makes an API
+                        # saying no look exactly like an empty market.
+                        api_error = data.get("error_message") or data.get("error_name")
+                        if api_error:
+                            self.record_error(SourceError(
+                                f"{self.name}: {site}: API error: {api_error} "
+                                f"(quota_remaining={quota}, backoff={data.get('backoff')})"
+                            ))
+                        else:
+                            empty_queries += 1
+                            if not sample:
+                                sample = (
+                                    f"first empty response: site={site} q={query!r} "
+                                    f"keys={sorted(data.keys())} quota_remaining={quota}"
+                                )
+                    else:
+                        for item in items:
+                            qid = f"{site}:{item['question_id']}"
+                            if qid in seen:
+                                continue
+                            seen.add(qid)
+                            yield self._to_finding(item, site, topic, query)
+
+                    if not data.get("has_more") and (quota if quota is not None else 1) < 10:
+                        self.record_error(SourceError(
+                            f"{self.name}: stopped early, daily quota nearly exhausted "
+                            f"(quota_remaining={quota}) after {total_queries} queries"
+                        ))
                         return  # out of daily quota; stop cleanly
+
+        if total_queries and empty_queries == total_queries:
+            # Reached only when every single query came back well-formed and
+            # empty. That is a signal about the request shape, not the market.
+            self.record_error(SourceError(
+                f"{self.name}: all {total_queries} queries returned zero items with no "
+                f"API error. Either these phrasings are too literal for Stack Exchange "
+                f"full-text search, or the request shape is wrong. {sample}"
+            ))
 
     @staticmethod
     def _to_finding(item: dict, site: str, topic: str, query: str) -> Finding:
